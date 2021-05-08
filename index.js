@@ -2,14 +2,23 @@ const express = require("express");
 const fs = require("fs");
 
 const app = express();
-const port = 3000;
+
+if (!process.env.PORT) {
+  throw new Error(
+    "Please specify the port number for the HTTP server with the env variable PORT."
+  );
+}
+
+const PORT = process.env.PORT;
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
+// This will not work in Safari. Here is the explanation why
+// http://www.the-data-wrangler.com/video-streaming-in-safari
 app.get("/video", (req, res) => {
-  const path = "./sample_video.mp4";
+  const path = "./videos/sample_video.mp4";
 
   fs.stat(path, (err, stats) => {
     if (err) {
@@ -28,6 +37,6 @@ app.get("/video", (req, res) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}`);
 });
