@@ -11,7 +11,10 @@ if (!process.env.PORT) {
 
 const PORT = process.env.PORT;
 const VIDEO_STORAGE_HOST = process.env.VIDEO_STORAGE_HOST;
-const VIDEO_STORAGE_PORT = process.env.VIDEO_STORAGE_PORT;
+const VIDEO_STORAGE_PORT = parseInt(process.env.VIDEO_STORAGE_PORT);
+console.log(
+  `Forwarding video requests to ${VIDEO_STORAGE_HOST}:${VIDEO_STORAGE_PORT}.`
+);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -21,20 +24,21 @@ app.get("/", (req, res) => {
 // http://www.the-data-wrangler.com/video-streaming-in-safari
 app.get("/video", (req, res) => {
   const forwardRequest = http.request(
+    // Forward the request to the video storage microservice.
     {
       host: VIDEO_STORAGE_HOST,
       port: VIDEO_STORAGE_PORT,
-      path: "/video?path=sample_video.mp4",
+      path: "/video?path=sample_video.mp4", // Video path is hard-coded for the moment.
       method: "GET",
       headers: req.headers
     },
     forwardResponse => {
-      res.writeHead(forwardResponse.statusCode, forwardResponse.headers);
+      res.writeHeader(forwardResponse.statusCode, forwardResponse.headers);
       forwardResponse.pipe(res);
     }
   );
 
-  res.pipe(forwardRequest);
+  req.pipe(forwardRequest);
 });
 
 app.listen(PORT, () => {
