@@ -1,5 +1,5 @@
 const express = require("express");
-const fs = require("fs");
+const http = require("http");
 
 const app = express();
 
@@ -10,6 +10,8 @@ if (!process.env.PORT) {
 }
 
 const PORT = process.env.PORT;
+const VIDEO_STORAGE_HOST = process.env.VIDEO_STORAGE_HOST;
+const VIDEO_STORAGE_PORT = process.env.VIDEO_STORAGE_PORT;
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -18,23 +20,21 @@ app.get("/", (req, res) => {
 // This will not work in Safari. Here is the explanation why
 // http://www.the-data-wrangler.com/video-streaming-in-safari
 app.get("/video", (req, res) => {
-  const path = "./videos/sample_video.mp4";
-
-  fs.stat(path, (err, stats) => {
-    if (err) {
-      console.error(err);
-      console.error("An error occurred");
-      res.sendStatus(500);
-      return;
+  const forwardRequest = http.request(
+    {
+      host: VIDEO_STORAGE_HOST,
+      port: VIDEO_STORAGE_PORT,
+      path: "/video?path=sample_video.mp4",
+      method: "GET",
+      headers: req.headers
+    },
+    forwardResponse => {
+      res.writeHead(forwardResponse.statusCode, forwardResponse.headers);
+      forwardResponse.pipe(res);
     }
+  );
 
-    res.writeHead(200, {
-      "Content-Length": stats.size,
-      "Content-Type": "video/mp4"
-    });
-
-    fs.createReadStream(path).pipe(res);
-  });
+  res.pipe(forwardRequest);
 });
 
 app.listen(PORT, () => {
